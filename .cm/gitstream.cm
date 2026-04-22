@@ -1,0 +1,43 @@
+# -*- mode: yaml -*-
+
+manifest:
+  version: 1.0
+
+automations:
+  # Test automation - always run
+  test_automation:
+    on: [pr_created, commit]
+    run:
+      - action: add-label@v1
+        args:
+          label: '✅ gitstream-works'
+          color: '00FF00'
+      - action: add-comment@v1
+        args:
+          comment: |
+            🎉 gitStream is working!
+            This PR was automatically processed by gitStream.
+
+  # Estimated time to review
+  estimated_time_to_review:
+    on: [pr_created, commit]
+    if:
+      - {{ not pr.draft }}
+      - {{ not is.bot }}
+    run:
+      - action: add-label@v1
+        args:
+          label: "{{ calc.etr }} min review"
+          color: {{ colors.red if (calc.etr >= 20) else (colors.yellow if (calc.etr >= 5) else colors.green) }}
+
+# Config
+calc:
+  etr: {{ branch | estimatedReviewTime }}
+
+is:
+  bot: {{ pr.author | match(list=['github-actions','_bot_','[bot]','dependabot','gitstream-cm']) | some }}
+
+colors:
+  red:    'b60205'
+  yellow: 'fbca04'
+  green:  '0e8a16'
